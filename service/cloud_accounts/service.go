@@ -28,6 +28,7 @@ type API struct {
 	client HttpClient
 	task   Task
 	logger Log
+	etask  CloudAccountTask
 }
 
 func NewAPI(client HttpClient, task Task, logger Log) *API {
