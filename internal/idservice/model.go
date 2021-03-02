@@ -63,7 +63,7 @@ func Delimiter(delimiter string) ServiceOption {
 }
 
 //Prefix will modify the bucket
-func Preifx(prefix string) ServiceOption {
+func Prefix(prefix string) ServiceOption {
 	return func(i *IDService) {
 		i.prefix = prefix
 	}
