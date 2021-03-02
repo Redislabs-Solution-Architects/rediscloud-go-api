@@ -34,7 +34,7 @@ func (m *MyMockedS3) ListObjectsV2(ctx context.Context, in *s3.ListObjectsV2Inpu
 func makeOutput(prefixes []string) *s3.ListObjectsV2Output {
 	cps := make([]types.CommonPrefix, len(prefixes))
 	for i, p := range prefixes {
-		cps[i] = types.CommonPrefix{&p}
+		cps[i] = types.CommonPrefix{Prefix: &p}
 	}
 	return &s3.ListObjectsV2Output{CommonPrefixes: cps}
 }
@@ -45,12 +45,9 @@ func TestListObjects(t *testing.T) {
 		Delimiter: aws.String("/"),
 		Prefix:    aws.String("resources/"),
 	}
-	output := s3.ListObjectsV2Output{
-		CommonPrefixes: []types.CommonPrefix{{Prefix: aws.String("resources/pid1/")}},
-	}
-	//prefixes := []string{"resources/pid1/"}
+	prefixes := []string{"resources/pid1/"}
 
-	mockS3.On("ListObjectsV2", context.TODO(), &input).Return(&output, nil)
+	mockS3.On("ListObjectsV2", context.TODO(), &input).Return(makeOutput(prefixes), nil)
 
 	uut, err := NewIDService(S3Client(mockS3))
 	if err != nil {
