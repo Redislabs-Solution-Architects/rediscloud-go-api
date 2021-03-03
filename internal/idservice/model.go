@@ -72,7 +72,7 @@ func Prefix(prefix string) ServiceOption {
 //Interface determines the methods available
 type Interface interface {
 	// Put(primarId string, resourceId int) error
-	// Get (primaryId string) (int, error)
+	GetResourceID(primaryID string) (int, error)
 	List() ([]string, error)
 	// Delete (primaryId string) error
 }
