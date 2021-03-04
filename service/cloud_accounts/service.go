@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/RedisLabs/rediscloud-go-api/internal"
+	"github.com/RedisLabs/rediscloud-go-api/kvstore"
 )
 
 type Log interface {
@@ -25,10 +26,10 @@ type Task interface {
 }
 
 type API struct {
-	client HttpClient
-	task   Task
-	logger Log
-	etask  CloudAccountTask
+	client  HttpClient
+	task    Task
+	logger  Log
+	kvstore kvstore.KVStore
 }
 
 func NewAPI(client HttpClient, task Task, logger Log) *API {

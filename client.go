@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/RedisLabs/rediscloud-go-api/internal"
+	"github.com/RedisLabs/rediscloud-go-api/kvstore"
 	"github.com/RedisLabs/rediscloud-go-api/service/account"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
@@ -69,6 +70,7 @@ type Options struct {
 	logger      Log
 	transport   http.RoundTripper
 	logRequests bool
+	kvStore     kvstore.KVStore
 }
 
 func (o Options) roundTripper() http.RoundTripper {

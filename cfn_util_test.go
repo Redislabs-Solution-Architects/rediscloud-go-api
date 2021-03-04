@@ -10,8 +10,13 @@ import (
 This file contains test utility functions needed for the cfn testing
 */
 
-func clientFromTestServerV2(s *httptest.Server, apiKey string, secretKey string) (*Client, error) {
-	return NewClientV2(LogRequests(true), BaseURL(s.URL), Auth(apiKey, secretKey), Transporter(s.Client().Transport))
+func clientFromTestServerV2(s *httptest.Server, apiKey string, secretKey string, opts ...Option) (*Client, error) {
+	// return NewClientV2(LogRequests(true), BaseURL(s.URL), Auth(apiKey, secretKey), Transporter(s.Client().Transport), opts...)
+	opts = append(opts, LogRequests(true))
+	opts = append(opts, BaseURL(s.URL))
+	opts = append(opts, Auth(apiKey, secretKey))
+	opts = append(opts, Transporter(s.Client().Transport))
+	return NewClientV2(opts...)
 }
 
 // infiniteTestServer will return a server which will return the

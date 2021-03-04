@@ -2,8 +2,11 @@ package cloud_accounts
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
+
+	"github.com/RedisLabs/rediscloud-go-api/kvstore"
 )
 
 type CloudAccountTask interface {
@@ -11,8 +14,8 @@ type CloudAccountTask interface {
 	GetExistingCloudAccounts(ctx context.Context) ([]string, error)
 }
 
-func NewAPIV2(client HttpClient, task CloudAccountTask, logger Log) *API {
-	return &API{client: client, task: Task(task), etask: task, logger: logger}
+func NewAPIV2(client HttpClient, task CloudAccountTask, logger Log, kvstore kvstore.KVStore) *API {
+	return &API{client: client, task: Task(task), logger: logger, kvstore: kvstore}
 }
 
 const longDuration time.Duration = 55 * time.Second
@@ -33,7 +36,12 @@ func (a *API) CreateWithTask(ctx context.Context, account CreateCloudAccount, pr
 		*primaryID = *response.ID
 	}
 	// subsequent create calls
-	return a.task.WaitForResourceId(ctx, *primaryID)
+	rid, err = a.task.WaitForResourceId(ctx, *primaryID)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		a.kvstore.Put(*primaryID, rid)
+	}
+
+	return
 }
 
 // DeleteWithPrimaryID will initiate or continue a cloud account deletion given a cloud account primary id
@@ -50,27 +58,31 @@ func (a *API) DeleteWithPrimaryID(ctx context.Context, primaryID string, taskID 
 			return err
 		}
 		var response taskResponse
-		if err := a.client.Delete(ctx,
+		if err = a.client.Delete(ctx,
 			fmt.Sprintf("delete cloud account %d", rid),
 			fmt.Sprintf("/cloud-accounts/%d", rid),
 			&response); err != nil {
-			return wrap404Error(rid, err)
+			if !errors.Is(err, context.DeadlineExceeded) {
+				return wrap404Error(rid, err)
+			}
 		}
 		*taskID = *response.ID
 	}
 
 	a.logger.Printf("Waiting for cloud account %d to finish being deleted", rid)
 
-	return a.task.Wait(ctx, *taskID)
+	err = a.task.Wait(ctx, *taskID)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		a.kvstore.Delete(primaryID)
+	}
+	return
+
 }
 
 //getResourceID returns the resource id given the primaryID
 // Returns error if the taskID does not correspond to a successful creation and/or no resource id can be found
 func (a *API) getResourceID(ctx context.Context, primaryID string) (id int, err error) {
-	id, err = a.task.WaitForResourceId(ctx, primaryID)
-	if err != nil {
-		return
-	}
+	id = a.kvstore.Get(primaryID)
 	if id == 0 {
 		err = fmt.Errorf("could not retrieve the resourceID for %v", primaryID)
 	}
@@ -80,8 +92,8 @@ func (a *API) getResourceID(ctx context.Context, primaryID string) (id int, err 
 //ListByPrimaryID returns a slice of cloud accounts by their primary ID (i.e. the id of the task that created them)
 //Only existing cloud accounts are returned.
 //An error is returned if errors are found
-func (a *API) ListByPrimaryID(ctx context.Context) (accounts []string, err error) {
-	return a.etask.GetExistingCloudAccounts(ctx)
+func (a *API) ListByPrimaryID(ctx context.Context) []string {
+	return a.kvstore.Keys()
 }
 
 //ReadByPrimaryID returns a cloud account with the given primary ID, or an error

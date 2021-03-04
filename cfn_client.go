@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/RedisLabs/rediscloud-go-api/internal"
+	"github.com/RedisLabs/rediscloud-go-api/kvstore"
 	"github.com/RedisLabs/rediscloud-go-api/service/account"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
@@ -19,6 +20,7 @@ func NewClientV2(configs ...Option) (*Client, error) {
 		secretKey: os.Getenv(SecretKeyEnvVar),
 		logger:    &defaultLogger{},
 		transport: http.DefaultTransport,
+		kvStore:   kvstore.NewKVMap(),
 	}
 
 	for _, option := range configs {
@@ -37,7 +39,7 @@ func NewClientV2(configs ...Option) (*Client, error) {
 	t := internal.NewAPI(client, config.logger)
 
 	a := account.NewAPI(client)
-	c := cloud_accounts.NewAPIV2(client, t, config.logger)
+	c := cloud_accounts.NewAPIV2(client, t, config.logger, config.kvStore.Copy("cloud_accounts"))
 	d := databases.NewAPI(client, t, config.logger)
 	s := subscriptions.NewAPI(client, t, config.logger)
 
@@ -47,4 +49,11 @@ func NewClientV2(configs ...Option) (*Client, error) {
 		Database:     d,
 		Subscription: s,
 	}, nil
+}
+
+//KVStore is a function that will set the kvstore option of a config
+func KVStoreOpt(kvs kvstore.KVStore) Option {
+	return func(options *Options) {
+		options.kvStore = kvs
+	}
 }
