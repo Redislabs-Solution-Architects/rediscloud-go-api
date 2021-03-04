@@ -304,7 +304,7 @@ func TestReadCloudAccountError(t *testing.T) {
 	_, err = subject.CloudAccount.ReadByPrimaryID(context.TODO(), primaryID)
 
 	require.Error(t, err)
-	//require.IsType(t, &cloud_accounts.NotFound{}, err)
+	require.IsType(t, &cloud_accounts.NotFoundPrimary{}, err)
 }
 
 //TestUpdateInitiation tests that an update initiates the updating process

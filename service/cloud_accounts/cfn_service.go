@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
+	"github.com/RedisLabs/rediscloud-go-api/internal"
 	"github.com/RedisLabs/rediscloud-go-api/kvstore"
 )
 
@@ -84,7 +86,7 @@ func (a *API) DeleteWithPrimaryID(ctx context.Context, primaryID string, taskID 
 func (a *API) getResourceID(ctx context.Context, primaryID string) (id int, err error) {
 	id = a.kvstore.Get(primaryID)
 	if id == 0 {
-		err = fmt.Errorf("could not retrieve the resourceID for %v", primaryID)
+		err = &NotFoundPrimary{primaryID}
 	}
 	return
 }
@@ -118,7 +120,7 @@ func (a *API) UpdateWithPrimaryID(ctx context.Context, cfnCloudAccount CfnUpdate
 		}
 		var response taskResponse
 		if err := a.client.Put(ctx, fmt.Sprintf("update cloud account %d", rid), fmt.Sprintf("/cloud-accounts/%d", rid), *cfnCloudAccount.UpdateCloudAccount, &response); err != nil {
-			return wrap404Error(rid, err)
+			return wrap404ErrorPrimary(*cfnCloudAccount.PrimaryID, err)
 		}
 		*taskID = *response.ID
 	}
@@ -127,4 +129,11 @@ func (a *API) UpdateWithPrimaryID(ctx context.Context, cfnCloudAccount CfnUpdate
 
 	return a.task.Wait(ctx, *taskID)
 
+}
+
+func wrap404ErrorPrimary(primary string, err error) error {
+	if v, ok := err.(*internal.HTTPError); ok && v.StatusCode == http.StatusNotFound {
+		return &NotFoundPrimary{primary: primary}
+	}
+	return err
 }
