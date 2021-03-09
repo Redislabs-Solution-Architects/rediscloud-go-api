@@ -2,6 +2,10 @@
 
 This repository is a Go SDK for the [Redis Cloud REST API](https://docs.redislabs.com/latest/rc/api/).
 
+The cloudformation-proposed-changes branch contains the changes proposed to integrate with CloudFormation using resource types.
+
+Unfortunately that proposal is on hold due to issues on the AWS CloudFormation side. The basic issue being that, as of 2021-03, the testing path doesn't work and the handler API is scantily documented. The consequence being that it will take some time to complete, so better to wait until the CloudFormation code is more mature and documented.
+
 ## Getting Started
 
 ### Installing
